@@ -7,26 +7,6 @@
         "requested": "[2.1.13, )",
         "resolved": "2.1.13",
         "contentHash": "rMN1omGe8536f4xLMvx9NwfvpAc9YFFfeXJ1t4P4PE6Gu8WCIoFliR1sh07hM+bfODmesk/dvMbji7vNI+B/pQ=="
-      },
-      "Meziantou.Analyzer": {
-        "type": "Direct",
-        "requested": "[2.0.161, )",
-        "resolved": "2.0.161",
-        "contentHash": "UiHpQz4A1u0pKVPT6JbzA0/k/H8QjTg/9y7OJr6AK/2A+SIAa5IZOrOgUoxBHJDEGdXS/hMFFf+uNrFfUSstNg=="
-      },
-      "TextCopy": {
-        "type": "Direct",
-        "requested": "[6.2.1, )",
-        "resolved": "6.2.1",
-        "contentHash": "ryejViUBmHQ2XMie2AiRBn7KVKu2Gh/hqrctGSAUf1BufwfPjr+MWuACNBaiG+40TMbWRDJZgV73Tpl9hggeRw==",
-        "dependencies": {
-          "Microsoft.Extensions.DependencyInjection.Abstractions": "7.0.0"
-        }
-      },
-      "Microsoft.Extensions.DependencyInjection.Abstractions": {
-        "type": "Transitive",
-        "resolved": "7.0.0",
-        "contentHash": "h3j/QfmFN4S0w4C2A6X7arXij/M/OVw3uQHSOFxnND4DyAzO1F9eMX7Eti7lU/OkSthEE0WzRsfT/Dmx86jzCw=="
       }
     }
   }

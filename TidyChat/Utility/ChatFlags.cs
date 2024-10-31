@@ -1,5 +1,5 @@
 ﻿using System;
-using ChatTwo.Code;
+using TidyChat.Rules;
 
 namespace TidyChat.Utility;
 
@@ -11,9 +11,7 @@ public static class ChatFlags
         None = 0,
         Debug = 1 << 0, // Debug
         Emotes = 1 << 1, // StandardEmote & CustomEmote
-
-        PlayerChannels =
-            1 << 2, // Say, Shout, Yell, Linkshells, Tells, Echo, Crossworld Linkshells, Party, CrossParty, PvpTeam, NoviceNetwork
+        PlayerChannels = 1 << 2, // Say, Shout, Yell, Linkshells, Tells, Echo, Crossworld Linkshells, Party, CrossParty, PvpTeam, NoviceNetwork
         System = 1 << 3, // System
         Progress = 1 << 4, // Progress
         Loot = 1 << 5, // LootNotice
@@ -23,9 +21,9 @@ public static class ChatFlags
         Gathering = 1 << 9, // Gathering
     }
 
-    public static bool CheckFlags(PlayerName player, ChatType chatType)
+    public static bool CheckFlags(CustomFilter filter, ChatType chatType)
     {
-        var whitelistedPlayerChannels = (Channels)player.whitelistedChannels;
+        var whitelistedPlayerChannels = (Channels)filter.whitelistedChannels;
         if (whitelistedPlayerChannels.HasFlag(Channels.Debug) && chatType is ChatType.Debug) return true;
         if (whitelistedPlayerChannels.HasFlag(Channels.Emotes) &&
             (chatType is ChatType.StandardEmote || chatType is ChatType.CustomEmote)) return true;

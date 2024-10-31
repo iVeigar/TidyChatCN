@@ -11,7 +11,7 @@ namespace TidyChat.Utility;
 
 internal static partial class TidyStrings
 {
-    public static readonly RegexOptions RegexOptions = RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture;
+    public static readonly RegexOptions RegexOptions = RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.Singleline;
     public static readonly TimeSpan RegexTimeout = TimeSpan.FromSeconds(1);
 
     public const string SettingsCommand = "/tidychat";

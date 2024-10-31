@@ -3,7 +3,7 @@
     <PropertyGroup>
         <Authors>Nadya, iVeigar</Authors>
         <Company>Served with love</Company>
-        <Version>2.1.0.0</Version>
+        <Version>2.1.0.1</Version>
         <Description>It is highly recommended to edit the default settings as you may disagree on which messages should be considered "spam"!
 
             Provides granular filter options to filter nearly all game-related spam, leaving only important game messages in your chat.
@@ -23,7 +23,7 @@
 
     <PropertyGroup>
         <TargetFramework>net8.0-windows</TargetFramework>
-        <Platforms>x64</Platforms>
+        <Platforms>x64;AnyCPU</Platforms>
         <Nullable>enable</Nullable>
         <LangVersion>latest</LangVersion>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -50,6 +50,7 @@
         <DalamudLibPath>$(appdata)\XIVLauncher\addon\Hooks\dev\</DalamudLibPath>
         <PackageIcon>icon.png</PackageIcon>
         <RepositoryUrl>https://github.com/NadyaNayme/TidyChat/</RepositoryUrl>
+        <PackageOutputPath />
     </PropertyGroup>
 
     <ItemGroup>

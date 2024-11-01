@@ -209,6 +209,13 @@ public sealed class Plugin : IDalamudPlugin
             }
         }
 
+        if (!Configuration.EnableDebugMode && isHandled)
+        {
+            Log.Debug($"Filtered message: {message} | Matched rule: {ruleMatched}");
+            SessionBlockedMessages += 1;
+            return;
+        }
+
         if (Configuration.IncludeChannel
             || Configuration.EnableDebugMode)
         {
@@ -221,7 +228,10 @@ public sealed class Plugin : IDalamudPlugin
             {
                 TidyStrings.AddRuleTag(tags, ruleMatched);
                 if (isHandled)
+                {
                     TidyStrings.AddBlockedTag(tags);
+                    isHandled = false;
+                }
                 else
                     TidyStrings.AddAllowedTag(tags);
             }
@@ -233,11 +243,6 @@ public sealed class Plugin : IDalamudPlugin
             {
                 message = tags.Append(message).BuiltString;
             }
-        }
-        if (!Configuration.EnableDebugMode && isHandled)
-        {
-            Log.Debug($"Filtered message: {message} | Matched rule: {ruleMatched}");
-            SessionBlockedMessages += 1;
         }
     }
 

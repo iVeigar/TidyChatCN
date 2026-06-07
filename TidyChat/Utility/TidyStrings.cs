@@ -1,18 +1,22 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using Dalamud.Bindings.ImGui;
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
+using Dalamud.Interface.Animation;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
-using ImGuiNET;
+using FFXIVClientStructs.FFXIV.Client.Graphics;
 using TidyChat.Rules;
+using static System.Net.Mime.MediaTypeNames;
+using static FFXIVClientStructs.FFXIV.Client.UI.Agent.AgentAlarm;
 namespace TidyChat.Utility;
 
 internal static partial class TidyStrings
 {
-    public static readonly RegexOptions RegexOptions = RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.Singleline;
-    public static readonly TimeSpan RegexTimeout = TimeSpan.FromSeconds(1);
+    public static readonly RegexOptions RegexOptions = RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.Singleline;
 
     public const string SettingsCommand = "/tidychat";
 
@@ -27,7 +31,9 @@ internal static partial class TidyStrings
     public static string ShorthandHelper { get; } = "打开设置";
 
     // The space at the end is intentional
-    public static string Tag { get; } = "[TidyChat] ";
+    public static string TagTidyChat { get; } = "[TidyChat] ";
+    public static string TagAllowed { get; } = "[Allowed] ";
+    public static string TagBlocked { get; } = "[Blocked] ";
 
     public static string InstanceText { get; } = "当前副本区：";
 
@@ -43,41 +49,55 @@ internal static partial class TidyStrings
 
     public static string LastDuty { get; set; } = "";
 
-    public static short CommendationsEarned { get; set; } = 0;
+    public static short CommendationsEarned { get; set; }
 
-    public static short LastCommendations { get; set; } = 0;
+    public static short LastCommendations { get; set; }
 
-    public static readonly Regex NoviceNetworkJoinRegex = new(@"^加入了新人频道", RegexOptions, RegexTimeout);
+    public static readonly Regex NoviceNetworkJoinRegex = new(@"^加入了新人频道", RegexOptions);
     public static readonly string[] SayQuestReminderStrings = ["使用键盘或软键盘输入"];
     
-    public static string ReplaceName(string normalizedInput, Configuration configuration)
-    {
-        var name = configuration.PlayerName.Trim();
-        Regex IO = new(name.ToLower(CultureInfo.CurrentCulture), TidyStrings.RegexOptions, TidyStrings.RegexTimeout);
-        normalizedInput = IO.Replace(normalizedInput, TidyStrings.YouText, (int)StringComparison.CurrentCultureIgnoreCase);
-        return normalizedInput;
-    }
+    public static string ReplaceLocalPlayerName(string text, string name)
+        => text.Replace(name, YouText);
 
     public static SeString SayReminder(SeString message, Configuration configuration)
     {
         // With the chat mode in Say, enter a phrase containing "Capture this"
 
-        var containingPhraseStart = message.TextValue.LastIndexOf(TidyStrings.StartQuotation, StringComparison.Ordinal);
-        var containingPhraseEnd = message.TextValue.LastIndexOf(TidyStrings.EndQuotation, StringComparison.Ordinal);
-        var lengthOfPhrase = containingPhraseEnd - containingPhraseStart;
-        var containingPhrase = message.TextValue.Substring(containingPhraseStart + 1, lengthOfPhrase - 1);
+        var containingPhraseStart = message.TextValue.LastIndexOf(StartQuotation, StringComparison.Ordinal);
+        var containingPhraseEnd = message.TextValue.LastIndexOf(EndQuotation, StringComparison.Ordinal);
+        var lengthOfPhrase = containingPhraseEnd - containingPhraseStart - 1;
+        var containingPhrase = message.TextValue.Substring(containingPhraseStart + 1, lengthOfPhrase);
+        var command = $"/say {containingPhrase}";
         if (configuration.CopyBetterSayReminder)
         {
             var stringBuilder = new SeStringBuilder();
             if (configuration.IncludeChatTag) AddTidyChatTag(stringBuilder);
-            stringBuilder.AddText($"\"/say {containingPhrase}\" {TidyStrings.CopiedToClipboard}");
-            ImGui.SetClipboardText($"/say {containingPhrase}");
+            stringBuilder.AddText($"\"{command}\" {CopiedToClipboard}");
+            ImGui.SetClipboardText(command);
             return stringBuilder.BuiltString;
         }
-        return $"/say {containingPhrase}";
+        return command;
     }
 
-    unsafe public static SeString Instances(SeString message, Configuration configuration)
+    public static SeString EmoteReminder(SeString message, Configuration configuration)
+    {
+        var containingPhraseStart = message.TextValue.LastIndexOf(StartQuotation, StringComparison.Ordinal);
+        var containingPhraseEnd = message.TextValue.LastIndexOf(EndQuotation, StringComparison.Ordinal);
+        var lengthOfPhrase = containingPhraseEnd - containingPhraseStart - 1;
+        var containingPhrase = message.TextValue.Substring(containingPhraseStart + 1, lengthOfPhrase);
+        var command = $"/{containingPhrase}";
+        if (configuration.CopyBetterEmoteReminder)
+        {
+            var stringBuilder = new SeStringBuilder();
+            if (configuration.IncludeChatTag) AddTidyChatTag(stringBuilder);
+            stringBuilder.AddText($"\"{command}\" {CopiedToClipboard}");
+            ImGui.SetClipboardText(command);
+            return stringBuilder.BuiltString;
+        }
+        return command;
+    }
+
+    unsafe public static SeString Instances(Configuration configuration)
     {
         try
         {
@@ -86,7 +106,7 @@ internal static partial class TidyStrings
             var instanceCharacter = ((char)(SeIconChar.Instance1 + (byte)(InstanceNumberFromSignature - 1))).ToString();
             var stringBuilder = new SeStringBuilder();
             if (configuration.IncludeChatTag) AddTidyChatTag(stringBuilder);
-            stringBuilder.AddText($"{TidyStrings.InstanceText} {instanceCharacter}");
+            stringBuilder.AddText($"{InstanceText} {instanceCharacter}");
             return stringBuilder.BuiltString;
         }
         catch
@@ -112,7 +132,7 @@ internal static partial class TidyStrings
     public static SeStringBuilder AddTidyChatTag(SeStringBuilder sestring)
     {
         sestring.AddUiForeground(14);
-        sestring.AddText(TidyStrings.Tag);
+        sestring.AddText(TagTidyChat);
         sestring.AddUiForegroundOff();
         return sestring;
     }
@@ -122,7 +142,7 @@ internal static partial class TidyStrings
     /// </summary>
     /// <param name="sestring">An empty SeStringBuilder()</param>
     /// <returns>SeString with text: "[Channel] "</returns>
-    public static SeStringBuilder AddChannelTag(SeStringBuilder sestring, ChatType channel)
+    public static SeStringBuilder AddLogKindTag(SeStringBuilder sestring, XivChatType channel)
     {
         sestring.AddUiForeground(8);
         sestring.AddText($"[{channel}] ");
@@ -151,7 +171,7 @@ internal static partial class TidyStrings
     public static SeStringBuilder AddBlockedTag(SeStringBuilder sestring)
     {
         sestring.AddUiForeground(8);
-        sestring.AddText("[Blocked] ");
+        sestring.AddText(TagBlocked);
         sestring.AddUiForegroundOff();
         return sestring;
     }
@@ -164,8 +184,56 @@ internal static partial class TidyStrings
     public static SeStringBuilder AddAllowedTag(SeStringBuilder sestring)
     {
         sestring.AddUiForeground(9);
-        sestring.AddText($"[Allowed] ");
+        sestring.AddText(TagAllowed);
         sestring.AddUiForegroundOff();
         return sestring;
+    }
+
+    public static bool IsChatKind(this XivChatType chatType)
+    {
+        return chatType == XivChatType.Say
+            || chatType == XivChatType.Shout
+            || chatType == XivChatType.TellOutgoing
+            || chatType == XivChatType.TellIncoming
+            || chatType == XivChatType.Party
+            || chatType == XivChatType.Alliance
+            || chatType == XivChatType.Ls1
+            || chatType == XivChatType.Ls2
+            || chatType == XivChatType.Ls3
+            || chatType == XivChatType.Ls4
+            || chatType == XivChatType.Ls5
+            || chatType == XivChatType.Ls6
+            || chatType == XivChatType.Ls7
+            || chatType == XivChatType.Ls8
+            || chatType == XivChatType.FreeCompany
+            || chatType == XivChatType.NoviceNetwork
+            || chatType == XivChatType.CustomEmote
+            || chatType == XivChatType.StandardEmote
+            || chatType == XivChatType.Yell
+            || chatType == XivChatType.CrossParty
+            || chatType == XivChatType.PvPTeam
+            || chatType == XivChatType.CrossLinkShell1
+            || chatType == XivChatType.GmTell
+            || chatType == XivChatType.GmSay
+            || chatType == XivChatType.GmShout
+            || chatType == XivChatType.GmYell
+            || chatType == XivChatType.GmParty
+            || chatType == XivChatType.GmFreeCompany
+            || chatType == XivChatType.GmLinkshell1
+            || chatType == XivChatType.GmLinkshell2
+            || chatType == XivChatType.GmLinkshell3
+            || chatType == XivChatType.GmLinkshell4
+            || chatType == XivChatType.GmLinkshell5
+            || chatType == XivChatType.GmLinkshell6
+            || chatType == XivChatType.GmLinkshell7
+            || chatType == XivChatType.GmLinkshell8
+            || chatType == XivChatType.GmNoviceNetwork
+            || chatType == XivChatType.CrossLinkShell2
+            || chatType == XivChatType.CrossLinkShell3
+            || chatType == XivChatType.CrossLinkShell4
+            || chatType == XivChatType.CrossLinkShell5
+            || chatType == XivChatType.CrossLinkShell6
+            || chatType == XivChatType.CrossLinkShell7
+            || chatType == XivChatType.CrossLinkShell8;
     }
 }

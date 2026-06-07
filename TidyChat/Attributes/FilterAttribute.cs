@@ -2,10 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
-using Lumina.Excel.GeneratedSheets;
+using Dalamud.Game.Text;
+using Lumina.Excel.Sheets;
+using Lumina.Text.ReadOnly;
 using TidyChat.Rules;
 using TidyStrings = TidyChat.Utility.TidyStrings;
-
 namespace TidyChat.Attributes;
 
 [AttributeUsage(AttributeTargets.Field, AllowMultiple = true)]
@@ -22,27 +23,24 @@ internal class FilterAttribute : Attribute
         };
     }
 
-    private ChatType[]? Channels { get; }
+    private XivChatType[]? LogKinds { get; }
     private Regex? Check { get; set; }
     private MessageFilterKind? MessageFilterType { get; }
     private object[]? Args { get; }
-    private bool Initialized { get; set; } = false;
     public string RegexString { get; private set; } = null!;
 
-    internal FilterAttribute(params ChatType[] channels)
+    internal FilterAttribute(params XivChatType[] logkinds)
     {
-        Channels = channels;
-        Initialized = true;
+        LogKinds = logkinds;
     }
-    internal FilterAttribute(ChatType[] channels, string regex)
+
+    internal FilterAttribute(string regex)
     {
-        Channels = channels;
         RegexString = regex;
     }
 
-    internal FilterAttribute(ChatType[] channels, MessageFilterKind messageFilterType, params object[] args)
+    internal FilterAttribute(MessageFilterKind messageFilterType, params object[] args)
     {
-        Channels = channels;
         MessageFilterType = messageFilterType;
         Args = args;
     }
@@ -51,29 +49,52 @@ internal class FilterAttribute : Attribute
     {
         RegexString = GetRegexString(playerFilterType);
     }
-    internal bool IsMatch(ChatType channel, string text)
+
+    internal bool IsMatch(XivChatType logkind, string normalizedText)
     {
-        if (!Initialized)
+        if (LogKinds != null)
+            return LogKinds.Contains(logkind);
+
+        if (RegexString == null)
         {
-            if (string.IsNullOrWhiteSpace(RegexString))
+            if (MessageFilterType == MessageFilterKind.LogMessage)
             {
-                if (MessageFilterType == MessageFilterKind.LogMessage)
-                {
-                    RegexString = LogMessage();
-                }
-                else if (MessageFilterType == MessageFilterKind.Obtained)
-                {
-                    RegexString = Obtains();
-                }
-                if (string.IsNullOrWhiteSpace(RegexString))
-                {
-                    throw new ArgumentException($"Regex String is required! MessageFilterKind: {MessageFilterType}, {string.Join(",",Args!.Select(a => a.ToString()))}.");
-                }
+                RegexString = LogMessage();
             }
-            Check = new(RegexString, TidyStrings.RegexOptions, TidyStrings.RegexTimeout);
-            Initialized = true;
+            else if (MessageFilterType == MessageFilterKind.Obtained)
+            {
+                RegexString = Obtains();
+            }
+            if (RegexString == null)
+            {
+                throw new ArgumentException($"Regex String is required! MessageFilterKind: {MessageFilterType}, {string.Join(",", Args!.Select(a => a.ToString()))}.");
+            }
         }
-        return (Channels == null || Channels.Length == 0 || Channels.Contains(channel)) && (Check?.IsMatch(text) ?? true);
+        Check = new(RegexString, TidyStrings.RegexOptions);
+        return Check.IsMatch(normalizedText);
+    }
+
+    public string GetRegexString()
+    {
+        if (LogKinds != null)
+            return string.Empty;
+
+        if (RegexString == null)
+        {
+            if (MessageFilterType == MessageFilterKind.LogMessage)
+            {
+                RegexString = LogMessage();
+            }
+            else if (MessageFilterType == MessageFilterKind.Obtained)
+            {
+                RegexString = Obtains();
+            }
+            if (RegexString == null)
+            {
+                throw new ArgumentException($"Regex String is required! MessageFilterKind: {MessageFilterType}, {string.Join(",", Args!.Select(a => a.ToString()))}.");
+            }
+        }
+        return RegexString;
     }
 
     private string LogMessage()
@@ -85,21 +106,18 @@ internal class FilterAttribute : Attribute
         {
             if (arg is int row)
             {
-                var text = Plugin.DataManager.GetExcelSheet<LogMessage>()?.GetRow((uint)row)?.Text;
-                if (text != null)
+                var text = Plugin.DataManager.GetExcelSheet<LogMessage>().GetRow((uint)row).Text;
+                string reg = "^";
+                foreach (var p in text)
                 {
-                    string reg = "^";
-                    foreach (var p in text.Payloads.Where(x => x is not null))
-                    {
-                        if (p.PayloadType == Lumina.Text.Payloads.PayloadType.Text && !string.IsNullOrEmpty(p.RawString))
-                            reg += p.RawString;
-                        else if (p.PayloadType == Lumina.Text.Payloads.PayloadType.NewLine)
-                            reg += "\r?\n";
-                        else
-                            reg += ".*?";
-                    }
-                    regs.Add($"(?:{reg})");
+                    if (p.Type == ReadOnlySePayloadType.Text)
+                        reg += p.ToString();
+                    else if (p.MacroCode == Lumina.Text.Payloads.MacroCode.NewLine)
+                        reg += "\r?\n";
+                    else
+                        reg += ".*?";
                 }
+                regs.Add($"(?:{reg})");
             }
             else if (arg is string reg)
                 regs.Add(reg);
@@ -118,7 +136,7 @@ internal class FilterAttribute : Attribute
         foreach (var arg in Args)
         {
             if (arg is int row)
-                regs.Add(Plugin.DataManager.GetExcelSheet<Item>()?.GetRow((uint)row)?.Name ?? "");
+                regs.Add(Plugin.DataManager.GetExcelSheet<Item>().GetRow((uint)row).Name.ToString());
             else if (arg is string reg)
                 regs.Add(reg);
             else

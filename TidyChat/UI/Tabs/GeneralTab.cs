@@ -1,6 +1,6 @@
-﻿using Dalamud.Interface.Components;
+﻿using Dalamud.Bindings.ImGui;
+using Dalamud.Interface.Components;
 using Dalamud.Interface.Utility.Raii;
-using ImGuiNET;
 
 namespace TidyChat.Settings.Tabs;
 
@@ -26,10 +26,10 @@ internal static class GeneralTab
                 configuration.Save();
             }
 
-            var debugIncludeChannel = configuration.IncludeChannel;
-            if (ImGui.Checkbox("注明消息所属频道。注: 与游戏本身的频道定义有轻微差别", ref debugIncludeChannel))
+            var debugIncludeChannel = configuration.IncludeLogKind;
+            if (ImGui.Checkbox("注明消息所属频道", ref debugIncludeChannel))
             {
-                configuration.IncludeChannel = debugIncludeChannel;
+                configuration.IncludeLogKind = debugIncludeChannel;
                 configuration.Save();
             }
 
@@ -85,23 +85,44 @@ internal static class GeneralTab
             }
 
             var betterSayReminder = configuration.BetterSayReminder;
-            if (ImGui.Checkbox("改进任务的 /说话 提示", ref betterSayReminder))
+            if (ImGui.Checkbox("改进任务要求在说话频道发送指定内容的提示信息", ref betterSayReminder))
             {
                 configuration.BetterSayReminder = betterSayReminder;
                 if (!configuration.BetterSayReminder && configuration.CopyBetterSayReminder)
                     configuration.CopyBetterSayReminder = false;
                 configuration.Save();
             }
-            ImGuiComponents.HelpMarker("当任务要求你在说话频道发送包含特定内容的消息时，把那条提示信息改为可以被轻松复制粘贴的消息");
+            ImGuiComponents.HelpMarker("当任务要求你在说话频道发送特定内容时，把那条提示信息改为相应的宏文本");
             
             using (ImRaii.PushIndent())
             {
                 var copyBetterSayReminder = configuration.CopyBetterSayReminder;
-                if (ImGui.Checkbox("自动复制改进后的 /说话 消息到剪贴板", ref copyBetterSayReminder))
+                if (ImGui.Checkbox("自动复制改进后的说话宏命令到剪贴板", ref copyBetterSayReminder))
                 {
                     configuration.CopyBetterSayReminder = copyBetterSayReminder;
                     if (!configuration.BetterSayReminder && configuration.CopyBetterSayReminder)
                         configuration.BetterSayReminder = true;
+                    configuration.Save();
+                }
+            }
+
+            var betterEmoteReminder = configuration.BetterEmoteReminder;
+            if (ImGui.Checkbox("改进任务要求使用指定情感动作的提示信息", ref betterEmoteReminder))
+            {
+                configuration.BetterEmoteReminder = betterEmoteReminder;
+                if (!configuration.BetterEmoteReminder && configuration.CopyBetterEmoteReminder)
+                    configuration.CopyBetterEmoteReminder = false;
+                configuration.Save();
+            }
+            ImGuiComponents.HelpMarker("当任务要求你使用特定情感动作时，把那条提示信息改为相应的宏文本");
+            using (ImRaii.PushIndent())
+            {
+                var copyBetterEmoteReminder = configuration.CopyBetterEmoteReminder;
+                if (ImGui.Checkbox("自动复制改进后的情感动作宏命令到剪贴板", ref copyBetterEmoteReminder))
+                {
+                    configuration.CopyBetterEmoteReminder = copyBetterEmoteReminder;
+                    if (!configuration.BetterEmoteReminder && configuration.CopyBetterEmoteReminder)
+                        configuration.BetterEmoteReminder = true;
                     configuration.Save();
                 }
             }

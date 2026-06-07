@@ -3,19 +3,24 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Numerics;
+using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Components;
+using Dalamud.Interface.Windowing;
 using Dalamud.Utility;
-using ImGuiNET;
 using TidyChat.Attributes;
 using TidyChat.Rules;
 using TidyChat.Settings.Tabs;
 namespace TidyChat;
 
-internal class MainUI(Configuration configuration) : IDisposable
+public sealed class MainUI: Window
 {
-    private readonly Configuration configuration = configuration;
-    private bool settingsVisible;
-    public bool SettingsVisible { get => settingsVisible; set => settingsVisible = value; }
+    private readonly Configuration configuration;
+    public MainUI(Configuration configuration) : base("Tidy Chat")
+    {
+        SizeConstraints = new WindowSizeConstraints { MinimumSize = new Vector2(640, 400), MaximumSize = new Vector2(float.MaxValue, float.MaxValue) };
+        this.configuration = configuration;
+    }
+
     internal static readonly Dictionary<Cate, Dictionary<SubCate, List<Rule>>> DrawableRules = GetGroupedDrawableRules();
     private static Dictionary<Cate, Dictionary<SubCate, List<Rule>>> GetGroupedDrawableRules()
     {
@@ -34,21 +39,8 @@ internal class MainUI(Configuration configuration) : IDisposable
                         .Select(t => t.Rule)
                         .ToList()));
     }
-    public void Dispose()
-    {
-        // Have around in case we need it
-    }
-    public void Draw()
-    {
-        if (!SettingsVisible) return;
-        ImGui.SetNextWindowSize(new Vector2(600, 450), ImGuiCond.FirstUseEver | ImGuiCond.Appearing);
-        if (ImGui.Begin("Tidy Chat##CN", ref settingsVisible))
-        {
-            DrawTabs();
-            ImGui.End();
-        }
-    }
-    public void DrawTabs()
+
+    public override void Draw()
     {
         if (ImGui.BeginTabBar("##tidychatConfigTabs"))
         {
@@ -62,7 +54,7 @@ internal class MainUI(Configuration configuration) : IDisposable
 
     private void DrawRulesTabs()
     {
-        foreach (var (tab, group) in MainUI.DrawableRules)
+        foreach (var (tab, group) in DrawableRules)
         {
             if (ImGui.BeginTabItem(tab.GetAttribute<DescriptionAttribute>()?.Description ?? tab.ToString()))
             {
